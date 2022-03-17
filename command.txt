@@ -1,0 +1,4 @@
+bison -d -o parser.cpp parser.y
+lex -o tokens.cpp tokens.l
+//Build parser without getting the "undefined reference to 'llvm::DisableABIBreakingChecks'
+clang++ -g -O3 -o parser  main.cpp parser.cpp tokens.cpp `llvm-config --cxxflags` -w -DLLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING=1
