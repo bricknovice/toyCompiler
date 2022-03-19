@@ -3,18 +3,16 @@
         {
             "type": "cppbuild",
             "label": "C/C++: g++ build active file",
-            "command": "/usr/bin/g++",
+            "command": "/usr/local/bin/clang++",
             "args": [
                 "-fdiagnostics-color=always",
-                //"-g",
-                //"${file}",
-                "-o",
-                "parser",
-                "${fileDirname}/parser.cpp",
-                "${fileDirname}/tokens.cpp",
-                "${fileDirname}/main.cpp"
-                //"${fileDirname}/${fileBasenameNoExtension}"
-                //"parser.cpp"
+                "-g",
+                "-O3",
+                "main",
+                "`llvm-config --cxxflags --ldflags --libs --system-libs`",
+                "-w",
+                "-pthread",
+                "*.cpp"
             ],
             "options": {
                 "cwd": "${fileDirname}"

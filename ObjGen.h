@@ -1,0 +1,3 @@
+
+#include "codegen.h"
+void ObjGen(CodeGenContext & context, const std::string& filename = "output.o");

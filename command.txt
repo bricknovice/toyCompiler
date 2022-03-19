@@ -1,4 +1,13 @@
+//Create the parser.cpp and parser.hpp files
 bison -d -o parser.cpp parser.y
+
+//Create the tokens.cpp file
 lex -o tokens.cpp tokens.l
+
 //Build parser without getting the "undefined reference to 'llvm::DisableABIBreakingChecks'
-clang++ -g -O3 -o parser  main.cpp parser.cpp tokens.cpp `llvm-config --cxxflags` -w -DLLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING=1
+clang++ -g -O3 -o parser  main.cpp parser.cpp tokens.cpp `llvm-config --cxxflags --libs core --system-libs` -w -pthread
+
+
+clang++ -g -O3 -o main  main.cpp parser.cpp tokens.cpp codegen.cpp `llvm-config --cxxflags --libs core --system-libs` -w -pthread
+
+clang++ -g -O3 -o main  main.cpp parser.cpp tokens.cpp codegen.cpp ObjGen.cpp `llvm-config --cxxflags --ldflags --libs --system-libs` -w -pthread
