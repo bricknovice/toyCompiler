@@ -12,8 +12,9 @@ int main(int argc, char** argv){
 	yyparse();
 	CodeGenContext context;
 	context.generateCode(*programBlock);
-	//std::cout<<programBlock<<std::endl;
-	//ObjGen(context);
+	context.theModule->print(llvm::errs(), nullptr);
+	cout<<"\n";
+	ObjGen(context);
 	
 	return 0;
 }

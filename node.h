@@ -54,11 +54,11 @@ public:
 // method(int a, int b, int c)
 class NMethodCall : public NExpression{
 public:
-	const NIdentifier& Callee;
+	NIdentifier& Callee;
 	ExpressionList Args;
-	NMethodCall(const NIdentifier& id, ExpressionList& Args):
+	NMethodCall(NIdentifier& Callee, ExpressionList& Args):
 		Callee(Callee), Args(Args){};
-	NMethodCall(const NIdentifier& id): 
+	NMethodCall(NIdentifier& Callee): 
 		Callee(Callee){}
 	llvm::Value* codeGen(CodeGenContext& context) override;
 };
@@ -108,9 +108,9 @@ public:
     NIdentifier& id;
     NExpression *assignmentExpr;
     NVariableDeclaration(const NIdentifier& type, NIdentifier& id) :
-        type(type), id(id) {}
+        type(type), id(id), assignmentExpr(nullptr) {};
     NVariableDeclaration(const NIdentifier& type, NIdentifier& id, NExpression* assignmentExpr) :
-        type(type), id(id), assignmentExpr(assignmentExpr) { }
+        type(type), id(id), assignmentExpr(assignmentExpr) {};
     llvm::Value* codeGen(CodeGenContext& context) override;
 };
 

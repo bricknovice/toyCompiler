@@ -17,7 +17,7 @@
 using namespace llvm;
 
 
-void ObjGen(CodeGenContext & context, const std::string& filename){
+void ObjGen(CodeGenContext& context, const std::string& filename){
     // Initialize the target registry etc.
     InitializeAllTargetInfos();
     InitializeAllTargets();

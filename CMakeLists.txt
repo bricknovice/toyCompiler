@@ -1,19 +1,24 @@
-cmake_minimum_required(VERSION 3.7)
-project(toyCompiler)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.7)
 
-set(CMAKE_CXX_STANDARD 11)
+PROJECT(toyCompiler)
 
-set(SOURCE_FILES
-    codegen.cpp
-    codegen.h
-    main.cpp
-    node.h
-    ObjGen.cpp
-    ObjGen.h
-    parser.cpp
-    parser.y
-    tokens.cpp
-    tokens.l
-)
+SET(CMAKE_CXX_STANDARD 11)
+find_package(Threads REQUIRED)
+find_package(BISON REQUIRED)
+find_package(FLEX REQUIRED)
+find_package(LLVM REQUIRED CONFIG)
 
-add_executable(toyCompiler ${SOURCE_FILES})
+message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+
+BISON_TARGET(parser parser.y parser.cpp
+                DEFINES_FILE parser.hpp)
+FLEX_TARGET(lexer tokens.l tokens.cpp)
+ADD_FLEX_BISON_DEPENDENCY(lexer parser)
+
+llvm_map_components_to_libnames(llvm_libs system-libs)
+
+add_executable(toyCompiler ${BISON_parser_OUTPUTS} ${FLEX_lexer_OUTPUTS} codegen.cpp codegen.h node.h ObjGen.cpp ObjGen.h main.cpp)
+target_compile_options(toyCompiler PRIVATE Wall)
+target_link_libraries(toyCompiler Threads)
+target_link_libraries(toyCompiler ${llvm_libs})

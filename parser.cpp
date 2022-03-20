@@ -1408,13 +1408,13 @@ yyreduce:
 
   case 10:
 #line 61 "parser.y"
-                       { (yyval.stmt) = new NVariableDeclaration(*(yyvsp[-1].ident), *(yyvsp[0].ident));printf("right\n");}
+                       { (yyval.stmt) = new NVariableDeclaration(*(yyvsp[-1].ident), *(yyvsp[0].ident));}
 #line 1413 "parser.cpp"
     break;
 
   case 11:
 #line 62 "parser.y"
-                                   { (yyval.stmt) = new NVariableDeclaration(*(yyvsp[-3].ident), *(yyvsp[-2].ident), (yyvsp[0].expr));printf("weong\n");}
+                                   { (yyval.stmt) = new NVariableDeclaration(*(yyvsp[-3].ident), *(yyvsp[-2].ident), (yyvsp[0].expr));}
 #line 1419 "parser.cpp"
     break;
 
@@ -1468,7 +1468,7 @@ yyreduce:
 
   case 20:
 #line 82 "parser.y"
-                                       { (yyval.expr) = new NMethodCall(*(yyvsp[-3].ident), *(yyvsp[-1].exprvec)); delete (yyvsp[-1].exprvec); }
+                                       { (yyval.expr) = new NMethodCall(*(yyvsp[-3].ident), *(yyvsp[-1].exprvec)); delete (yyvsp[-1].exprvec);}
 #line 1473 "parser.cpp"
     break;
 
