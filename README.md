@@ -30,10 +30,9 @@
   }
   ```
 ## TODO
-  1. function call malfunction
-  2. .obj generation
-  4. JIT and optimizer support
-  5. Cmake build 
+  1. .obj generation
+  2. JIT and optimizer support
+  3. Cmake build 
 ## Referencing Websites
   1. [Write you own toy compiler](https://gnuu.org/2009/09/18/writing-your-own-toy-compiler/)
   2. [TinyCompiler-stardust95](https://github.com/stardust95/TinyCompiler)

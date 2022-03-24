@@ -264,6 +264,7 @@ Value* NFunctionDeclaration::codeGen(CodeGenContext& context){
     
     //ReturnInst::Create(context.llvmContext, basicBlock);
     context.popBlock();
+    context.builder->SetInsertPoint(context.blocksStack.back()->block);
     //cout<<"Function declaration generate success: "<<this->id.name<<'\n';
     return function;
 }
