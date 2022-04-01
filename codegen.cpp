@@ -58,13 +58,13 @@ void CodeGenContext::generateCode(NBlock& root){
     this->builder->CreateRetVoid();
     popBlock();
     
-    if(!verifyModule(*this->theModule)){
-        LogErrorV("Module error");
-        return ;
-    }
     legacy::PassManager PM;
     PM.add(createPrintModulePass(outs()));
     PM.run(*this->theModule);
+    if(verifyModule(*this->theModule)){
+        LogErrorV("Module error");
+        return ;
+    }
     //cout<< "IR code generate success\n";
     return ;
 }
@@ -256,14 +256,14 @@ Value* NFunctionDeclaration::codeGen(CodeGenContext& context){
         }else{
             context.builder->CreateRet(retVal);
         }
-    }
-
-    if(!verifyFunction(*function)){
-        return LogErrorV("Function error");
-    }
+    } 
     context.popBlock();
     context.builder->SetInsertPoint(context.blocksStack.back()->block);
     //cout<<"Function declaration generate success: "<<this->id.name<<'\n';
+
+    if(verifyFunction(*function)){
+        return LogErrorV("Function error");
+    }
     return function;
 }
 

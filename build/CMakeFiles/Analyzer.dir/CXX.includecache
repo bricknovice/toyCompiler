@@ -13,4 +13,6 @@ llvm/Passes/PassPlugin.h
 /home/joshua/toyCompiler/llvm/Passes/PassPlugin.h
 llvm/Support/raw_ostream.h
 /home/joshua/toyCompiler/llvm/Support/raw_ostream.h
+iostream
+/home/joshua/toyCompiler/iostream
 
