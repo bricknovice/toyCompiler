@@ -1,0 +1,18 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/joshua/toyCompiler/HelloWorld.cpp
+llvm/IR/LegacyPassManager.h
+/home/joshua/toyCompiler/llvm/IR/LegacyPassManager.h
+llvm/Passes/PassBuilder.h
+/home/joshua/toyCompiler/llvm/Passes/PassBuilder.h
+llvm/Passes/PassPlugin.h
+/home/joshua/toyCompiler/llvm/Passes/PassPlugin.h
+llvm/Support/raw_ostream.h
+/home/joshua/toyCompiler/llvm/Support/raw_ostream.h
+

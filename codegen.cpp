@@ -2,13 +2,15 @@
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/Verifier.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/IRPrintingPasses.h>
 #include <llvm/Support/raw_ostream.h>
+#include <memory>
 #include "node.h"
 #include "codegen.h"
 #include "parser.hpp"
-#include <memory>
+
 using namespace std;
 using namespace llvm;
 
@@ -47,16 +49,23 @@ void CodeGenContext::generateCode(NBlock& root){
     //cout<<"Creating main function..."<<"\n";
     std::vector<Type*> sysArgs;
     FunctionType* mainFuncType = FunctionType::get(Type::getVoidTy(*this->llvmContext), makeArrayRef(sysArgs), false);
-    Function* mainFunc = Function::Create(mainFuncType, GlobalValue::ExternalLinkage, "main",this->theModule.get());
-
+    Function* mainFunc = Function::Create(mainFuncType, GlobalValue::ExternalLinkage, "main",*this->theModule.get());
     //cout<<"Creating the block of main function..."<<"\n";
     BasicBlock* block = BasicBlock::Create(*this->llvmContext, "entry", mainFunc);
     this->builder->SetInsertPoint(block);
     pushBlock(block);
-    Value* retValue = root.codeGen(*this);
+    root.codeGen(*this);
+    this->builder->CreateRetVoid();
     popBlock();
+    
+    if(!verifyModule(*this->theModule)){
+        LogErrorV("Module error");
+        return ;
+    }
+    legacy::PassManager PM;
+    PM.add(createPrintModulePass(outs()));
+    PM.run(*this->theModule);
     //cout<< "IR code generate success\n";
-
     return ;
 }
 
@@ -98,15 +107,8 @@ Value* NVariableDeclaration::codeGen(CodeGenContext& context){
     //cout << "Generating variable declaration of " << this->type.name << " " << this->id.name << '\n';
     
     //Allocating memory for allocedVar
-    //Value* allocedVar = context.builder.CreateAlloca(typeOf(context, this->type));
-    
-    Type *Ty = typeOf(context, this->type);
-    Value *ArraySize = nullptr;
-    const Twine &Name = this->id.name;
-    const DataLayout &DL = context.theModule->getDataLayout();
-    Align AllocaAlign = DL.getPrefTypeAlign(Ty);
-    unsigned AddrSpace = DL.getAllocaAddrSpace();
-    Value* allocedVar = context.builder->Insert(new AllocaInst(Ty, AddrSpace, ArraySize, AllocaAlign), Name);
+
+    Value* allocedVar = context.builder->CreateAlloca(typeOf(context, this->type), nullptr, this->id.name);
     //store allocaed Var into our local symbol table
     context.blocksStack.back()->locals[this->id.name] = allocedVar;
     
@@ -125,17 +127,10 @@ Value* NIdentifier::codeGen(CodeGenContext& context){
     //Looking up the identifier on symbol table.
     //Value* value = context.globalVars[this->name];
     Value* value = context.blocksStack.back()->locals[this->name];
+    Type* Ty = value->getType()->getPointerElementType();
     if(!value)
         return LogErrorV("Unknown variable name");
-    //Value* rst = context.builder->CreateLoad(value->getType(),value, false, "");
-    MaybeAlign Align = MaybeAlign();
-    Type* Ty = value->getType();
-    bool isVolatile = false;
-    if (!Align) {
-       const DataLayout &DL = context.theModule->getDataLayout();
-       Align = DL.getABITypeAlign(Ty);
-     }
-    Value* rst = context.builder->Insert(new LoadInst(Ty, value, Twine(), isVolatile, *Align), this->name);
+    Value* rst = context.builder->CreateLoad(Ty, value, false, this->name);
     //cout << "Identifier generate success: "<< this->name<<"\n";
     return rst;
 }
@@ -145,8 +140,8 @@ Value* NBinaryOperator::codeGen(CodeGenContext& context){
 
     Value* L = this->lhs.codeGen(context);
     Value* R = this->rhs.codeGen(context);
+    
     bool fp = false;//Determine whether this is a float point operator.
-
     if( (L->getType()->getTypeID() == Type::DoubleTyID) || (R->getType()->getTypeID() == Type::DoubleTyID) ){  // If one of the operand is double ,do type upgrade(int to double)
         fp = true;
         if( (R->getType()->getTypeID() != Type::DoubleTyID) ){
@@ -190,7 +185,6 @@ Value* NAssignment::codeGen(CodeGenContext& context){
         return LogErrorV("Undeclared variable");
     
 
-    
     Value* Val = this->rhs.codeGen(context);
     Value* Ptr = dst;
     MaybeAlign Align = MaybeAlign();
@@ -199,9 +193,7 @@ Value* NAssignment::codeGen(CodeGenContext& context){
       const DataLayout &DL = context.theModule->getDataLayout();
       Align = DL.getABITypeAlign(Val->getType());
     }
-
     Value* rst = context.builder->Insert(new StoreInst(Val, Ptr, isVolatile, *Align));
-
     //cout<<"Assignment generate success: "<< this->lhs.name<<'\n';
     return rst;
 }
@@ -233,8 +225,8 @@ Value* NFunctionDeclaration::codeGen(CodeGenContext& context){
     //取得function的型別
     FunctionType* ftype = FunctionType::get(typeOf(context,this->type), argTypes, false);
     //創建function於context中
-    Function* function = Function::Create(ftype, GlobalValue::ExternalLinkage, this->id.name.c_str(), context.theModule.get());
-    
+    Function* function = Function::Create(ftype, GlobalValue::ExternalLinkage, this->id.name.c_str(), *context.theModule.get());
+
     //用builder將block插入
     BasicBlock* basicBlock = BasicBlock::Create(*context.llvmContext, "entry", function);
     context.builder->SetInsertPoint(basicBlock);
@@ -245,31 +237,43 @@ Value* NFunctionDeclaration::codeGen(CodeGenContext& context){
     for(auto& ir_arg_it : function->args()){
         //幫參數取unique name
         ir_arg_it.setName((*origin_arg)->id.name);
-        Value* Val = &ir_arg_it;
-        Value* argAlloc = (*origin_arg)->codeGen(context);
-        //Value *Ptr = dst;
-        MaybeAlign Align = MaybeAlign();
-        bool isVolatile = false;
-        if (!Align) {
-            const DataLayout &DL = context.theModule->getDataLayout();
-            Align = DL.getABITypeAlign(argAlloc->getType());
-        }
-        context.builder->Insert(new StoreInst(Val, argAlloc, isVolatile, *Align));
-        //context.builder.CreateStore(&ir_arg_it, argAlloc, false);
-
+        context.builder->CreateStore(&ir_arg_it, (*origin_arg)->codeGen(context), false);
         origin_arg++;
     }
     
     this->block.codeGen(context);
-    
-    //ReturnInst::Create(context.llvmContext, basicBlock);
+
+    //Generate return value based on the returnVal
+    Value* retVal = context.blocksStack.back()->returnVal;
+    //cout<<"function return type: "<<retVal->getType()->getTypeID()<<endl;
+    //cout<<"my return type: "<<typeOf(context,this->type)->getTypeID()<<endl;
+
+    if(!typeOf(context,this->type)){
+        context.builder->CreateRetVoid();
+    }else{
+        if(retVal->getType() != typeOf(context,this->type)){
+            return LogErrorV("return type doesn't match with function type!");
+        }else{
+            context.builder->CreateRet(retVal);
+        }
+    }
+
+    if(!verifyFunction(*function)){
+        return LogErrorV("Function error");
+    }
     context.popBlock();
     context.builder->SetInsertPoint(context.blocksStack.back()->block);
     //cout<<"Function declaration generate success: "<<this->id.name<<'\n';
     return function;
 }
 
-
+llvm::Value* NReturnStatement::codeGen(CodeGenContext &context) {
+    //cout << "Generating return statement" << endl;
+    Value* returnValue = this->expression->codeGen(context);
+    context.blocksStack.back()->returnVal = returnValue;
+    //cout << "Return statement generate success" << endl;
+    return returnValue;
+}
 
 
 

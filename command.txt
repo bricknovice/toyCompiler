@@ -4,10 +4,9 @@ bison -d -o parser.cpp parser.y
 //Create the tokens.cpp file
 lex -o tokens.cpp tokens.l
 
-//Build parser without getting the "undefined reference to 'llvm::DisableABIBreakingChecks'
-clang++ -g -O3 -o parser  main.cpp parser.cpp tokens.cpp `llvm-config --cxxflags --libs core --system-libs` -w -pthread
+//Build parser and generate raw IR code.
+clang++ -g -O3 -o main  main.cpp parser.cpp tokens.cpp codegen.cpp filegen.cpp `llvm-config --cxxflags --ldflags --system-libs --libs` -w -pthread
 
 
-clang++ -g -O3 -o main  main.cpp parser.cpp tokens.cpp codegen.cpp `llvm-config --cxxflags --libs core --system-libs` -w -pthread
-
-clang++ -g -O3 -o main  main.cpp parser.cpp tokens.cpp codegen.cpp ObjGen.cpp `llvm-config --cxxflags --ldflags --system-libs --libs` -w -pthread
+//Run "module.bc"(bitcode) with "analyzer"(pass) from libAnalyzer.so twice.
+opt -load-pass-plugin libAnalyzer.so --passes=analyzer,analyzer -disable-output ../module.bc

@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/home/joshua/toyCompiler/build",
+  "command": "/usr/local/bin/clang++  -DAnalyzer_EXPORTS   -fno-rtti -g -fPIC   -std=gnu++14 -o CMakeFiles/Analyzer.dir/analyzer.cpp.o -c /home/joshua/toyCompiler/analyzer.cpp",
+  "file": "/home/joshua/toyCompiler/analyzer.cpp"
+}
+]

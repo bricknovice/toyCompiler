@@ -18,7 +18,7 @@ using SymTable = std::map<std::string, llvm::Value*>;
 class CodeGenBlock {
 public:
     llvm::BasicBlock *block;
-    //llvm::Value* returnval;
+    llvm::Value* returnVal;
     //local variables
     std::map<std::string, llvm::Value*> locals;
 };
@@ -30,16 +30,15 @@ public:
     std::unique_ptr<llvm::LLVMContext> llvmContext;
     std::unique_ptr<llvm::IRBuilder<>> builder;
     std::unique_ptr<llvm::Module> theModule;
+
     //global variables
     SymTable globalVars;
 
     // 利用context建立一個Module空間，並用ptr指向它
     CodeGenContext(){
         this->llvmContext = std::make_unique<llvm::LLVMContext>();
-        this->theModule = std::make_unique<llvm::Module>("first jit project", *llvmContext);
+        this->theModule = std::make_unique<llvm::Module>("first project", *llvmContext);
         this->builder = std::make_unique<llvm::IRBuilder<>>(*llvmContext);
-
-        //this->theModule = std::unique_ptr<llvm::Module>(new llvm::Module("main", this->llvmContext));
     }
 
     void pushBlock(llvm::BasicBlock* block){

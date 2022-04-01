@@ -20,10 +20,11 @@ int token;
 }
 
 //Define terminal symbols
-%token <string> TIDENTIFIER TINTEGER TDOUBLE
+%token <string> TIDENTIFIER TINTEGER TDOUBLE 
 %token <token> TCEQ TCNE TCLT TCLE TCGT TCGE TEQUAL
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TCOMMA TDOT
 %token <token> TPLUS TMINUS TMUL TDIV
+%token <token> TRETURN
 
 //Define non terminal symbols
 %type <ident> ident
@@ -50,9 +51,10 @@ stmts : stmt { $$ = new NBlock(); $$->statements.push_back($<stmt>1);}
       | stmts stmt { $1->statements.push_back($<stmt>2);}
       ;
 
-stmt : var_decl| func_decl 
-     | expr { $$ = new NExpressionStatement(*$1);}
-     ;
+stmt  : var_decl| func_decl 
+      | expr { $$ = new NExpressionStatement(*$1);}
+      | TRETURN expr { $$ = new NReturnStatement($2);}
+      ;
 
 block : TLBRACE stmts TRBRACE { $$ = $2; }
       | TLBRACE TRBRACE { $$ = new NBlock(); }

@@ -2,7 +2,6 @@
 #include <iostream>
 #include <vector>
 #include <llvm/IR/Value.h>
-
 class CodeGenContext;
 class NStatement;
 class NExpression;
@@ -123,6 +122,17 @@ public:
 	NBlock& block;
 	NFunctionDeclaration(const NIdentifier& type, const NIdentifier& id, const VariableList& arguments, NBlock& block) :
 		type(type), id(id), arguments(arguments), block(block) {};
+	llvm::Value* codeGen(CodeGenContext& context) override;
+};
+
+class NReturnStatement : public NStatement{
+public:
+	NExpression* expression;
+
+	NReturnStatement(){};
+
+	NReturnStatement(NExpression* expression): expression(expression){};
+
 	llvm::Value* codeGen(CodeGenContext& context) override;
 };
 

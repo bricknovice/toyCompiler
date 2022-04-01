@@ -1,24 +1,26 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 3.7)
+# LLVM requires CMake >= 3.4.3
+CMAKE_MINIMUM_REQUIRED(VERSION 3.4.3)
+project(llvm-tutor-hello-world)
 
-PROJECT(toyCompiler)
+# Step 1. Make sure that LLVMConfig.cmake _is_ on CMake's search path
+# set(LT_LLVM_INSTALL_DIR "" CACHE PATH "LLVM installation directory")
+# set(LT_LLVM_CMAKE_CONFIG_DIR "{$LT_LLVM_INSTALL_DIR}/lib/cmake/llvm/")
+# list(APPEND CMAKE_PREFIX_PATH "${LT_LLVM_CMAKE_CONFIG_DIR}")
 
-SET(CMAKE_CXX_STANDARD 11)
-find_package(Threads REQUIRED)
-find_package(BISON REQUIRED)
-find_package(FLEX REQUIRED)
+# Step 2. Load LLVM config from ... LLVMConfig.cmake
 find_package(LLVM REQUIRED CONFIG)
 
-message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+# Analyzer includes header files from LLVM
+include_directories(${LLVM_INCLUDE_DIRS})
 
-BISON_TARGET(parser parser.y parser.cpp
-                DEFINES_FILE parser.hpp)
-FLEX_TARGET(lexer tokens.l tokens.cpp)
-ADD_FLEX_BISON_DEPENDENCY(lexer parser)
+set(CMAKE_CXX_STANDARD 14 CACHE STRING "")
 
-llvm_map_components_to_libnames(llvm_libs system-libs)
+if(NOT LLVM_ENABLE_RTTI)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+endif()
 
-add_executable(toyCompiler ${BISON_parser_OUTPUTS} ${FLEX_lexer_OUTPUTS} codegen.cpp codegen.h node.h ObjGen.cpp ObjGen.h main.cpp)
-target_compile_options(toyCompiler PRIVATE Wall)
-target_link_libraries(toyCompiler Threads)
-target_link_libraries(toyCompiler ${llvm_libs})
+# Step 3. Define the plugin/pass/library
+# Gotcha: You don't need to use add_llvm_library
+add_library(Analyzer SHARED analyzer.cpp)
+
+target_link_libraries(Analyzer)

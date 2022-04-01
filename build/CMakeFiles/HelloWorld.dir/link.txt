@@ -1,0 +1,1 @@
+/usr/local/bin/clang++ -fPIC -g  -shared -Wl,-soname,libHelloWorld.so -o libHelloWorld.so CMakeFiles/HelloWorld.dir/HelloWorld.cpp.o 

@@ -1,7 +1,7 @@
 #include <iostream>
 #include "node.h"
 #include "codegen.h"
-#include "ObjGen.h"
+#include "filegen.h"
 using namespace std;
 
 //root of AST
@@ -12,9 +12,7 @@ int main(int argc, char** argv){
 	yyparse();
 	CodeGenContext context;
 	context.generateCode(*programBlock);
-	context.theModule->print(llvm::errs(), nullptr);
-	cout<<"\n";
 	ObjGen(context);
-	
+	BitGen(context);
 	return 0;
 }
