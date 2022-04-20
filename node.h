@@ -136,3 +136,15 @@ public:
 	llvm::Value* codeGen(CodeGenContext& context) override;
 };
 
+class NIfStatement: public NStatement{
+public:
+	NExpression* condition;
+	NBlock* ThenBlock;
+	NBlock* ElseBlock;
+
+	NIfStatement(){};
+	NIfStatement(NExpression* condition, NBlock* blk, NBlock* blk2 = nullptr) : 
+		condition(condition), ThenBlock(blk), ElseBlock(blk2){};
+	llvm::Value* codeGen(CodeGenContext& context) override;
+};
+

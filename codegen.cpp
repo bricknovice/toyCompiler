@@ -39,6 +39,8 @@ static Type* typeOf(CodeGenContext& context, const NIdentifier& type){
     }
     else if(type.name.compare("double") == 0){
         return Type::getDoubleTy(*context.llvmContext);
+    }else if(type.name.compare("bool") == 0){
+        return Type::getInt1Ty(*context.llvmContext);
     }
     return Type::getVoidTy(*context.llvmContext);
 }
@@ -110,7 +112,7 @@ Value* NVariableDeclaration::codeGen(CodeGenContext& context){
 
     Value* allocedVar = context.builder->CreateAlloca(typeOf(context, this->type), nullptr, this->id.name);
     //store allocaed Var into our local symbol table
-    context.blocksStack.back()->locals[this->id.name] = allocedVar;
+    context.blocksStack.back()->localsVars[this->id.name] = allocedVar;
     
     //若是int a = 10(右值有東西)，則做assignment
     if( this->assignmentExpr != nullptr ){
@@ -126,7 +128,7 @@ Value* NIdentifier::codeGen(CodeGenContext& context){
     //cout << "Find identifier " << this->name << endl;
     //Looking up the identifier on symbol table.
     //Value* value = context.globalVars[this->name];
-    Value* value = context.blocksStack.back()->locals[this->name];
+    Value* value = context.blocksStack.back()->localsVars[this->name];
     Type* Ty = value->getType()->getPointerElementType();
     if(!value)
         return LogErrorV("Unknown variable name");
@@ -141,8 +143,11 @@ Value* NBinaryOperator::codeGen(CodeGenContext& context){
     Value* L = this->lhs.codeGen(context);
     Value* R = this->rhs.codeGen(context);
     
-    bool fp = false;//Determine whether this is a float point operator.
-    if( (L->getType()->getTypeID() == Type::DoubleTyID) || (R->getType()->getTypeID() == Type::DoubleTyID) ){  // If one of the operand is double ,do type upgrade(int to double)
+    //Determine whether this is a float point operator.
+    bool fp = false;
+
+    // If one of the operand is double ,do type upgrade(int to double)
+    if( (L->getType()->getTypeID() == Type::DoubleTyID) || (R->getType()->getTypeID() == Type::DoubleTyID) ){  
         fp = true;
         if( (R->getType()->getTypeID() != Type::DoubleTyID) ){
             R = context.builder->CreateUIToFP(R, Type::getDoubleTy(*context.llvmContext), "ftmp");
@@ -151,7 +156,7 @@ Value* NBinaryOperator::codeGen(CodeGenContext& context){
             L = context.builder->CreateUIToFP(L, Type::getDoubleTy(*context.llvmContext), "ftmp");
         }
     }
-    //???
+
     if( !L || !R ){
         return nullptr;
     }
@@ -164,7 +169,29 @@ Value* NBinaryOperator::codeGen(CodeGenContext& context){
         case TMUL:
             return fp ? context.builder->CreateFMul(L, R, "mulftmp") : context.builder->CreateMul(L, R, "multmp");
         case TDIV:
-            return fp ? context.builder->CreateFDiv(L, R, "divftmp") : context.builder->CreateSDiv(L, R, "divtmp");//What does that S mean ？ 
+            return fp ? context.builder->CreateFDiv(L, R, "divftmp") : context.builder->CreateSDiv(L, R, "divtmp"); 
+        case TAND: 
+            return fp ? LogErrorV("Invalid AND operation") : context.builder->CreateAnd(L, R, "andtmp");
+        case TOR: 
+            return fp ? LogErrorV("Invalid OR operation") : context.builder->CreateOr(L, R, "ortmp");
+        case TXOR: 
+            return fp ? LogErrorV("Invalid XOR operation") : context.builder->CreateXor(L, R, "xortmp");
+        case TLSFT: 
+            return fp ? LogErrorV("Invalid LSHIFT operation") : context.builder->CreateShl(L, R, "lsfttmp");
+        case TRSFT: 
+            return fp ? LogErrorV("Invalid RSHIFT operation") : context.builder->CreateAShr(L, R, "rsfttmp");
+        case TCLT:
+            return fp ? context.builder->CreateFCmpULT(L, R, "cmpftmp") : context.builder->CreateICmpULT(L, R, "cmptmp");
+        case TCLE:
+            return fp ? context.builder->CreateFCmpOLE(L, R, "cmpftmp") : context.builder->CreateICmpSLE(L, R, "cmptmp");
+        case TCGE:
+            return fp ? context.builder->CreateFCmpOGE(L, R, "cmpftmp") : context.builder->CreateICmpSGE(L, R, "cmptmp");
+        case TCGT:
+            return fp ? context.builder->CreateFCmpOGT(L, R, "cmpftmp") : context.builder->CreateICmpSGT(L, R, "cmptmp");
+        case TCEQ:
+            return fp ? context.builder->CreateFCmpOEQ(L, R, "cmpftmp") : context.builder->CreateICmpEQ(L, R, "cmptmp");
+        case TCNE:
+            return fp ? context.builder->CreateFCmpONE(L, R, "cmpftmp") : context.builder->CreateICmpNE(L, R, "cmptmp");
         default:
             return LogErrorV("Unknow binary operator");
     }
@@ -177,8 +204,8 @@ Value* NAssignment::codeGen(CodeGenContext& context){
     //cout << "Generating assignment of " << this->lhs.name << " = " << endl;
     Value* dst = nullptr;
     for(auto it = context.blocksStack.rbegin();it!=context.blocksStack.rend();++it){
-        if((*it)->locals.find(this->lhs.name) !=(*it)->locals.end()){
-            dst = (*it)->locals[this->lhs.name];
+        if((*it)->localsVars.find(this->lhs.name) !=(*it)->localsVars.end()){
+            dst = (*it)->localsVars[this->lhs.name];
         }
     }
     if(!dst)
@@ -209,7 +236,7 @@ Value* NBlock::codeGen(CodeGenContext& context){
     return last;
 }
 
-Value* NExpressionStatement::codeGen(CodeGenContext &context){
+Value* NExpressionStatement::codeGen(CodeGenContext& context){
     //cout<<"Generating expression statement"<<'\n';
     //cout<<"Expression statement generate success"<<'\n';
     return this->expression.codeGen(context);
@@ -267,12 +294,68 @@ Value* NFunctionDeclaration::codeGen(CodeGenContext& context){
     return function;
 }
 
-llvm::Value* NReturnStatement::codeGen(CodeGenContext &context) {
+llvm::Value* NReturnStatement::codeGen(CodeGenContext& context) {
     //cout << "Generating return statement" << endl;
     Value* returnValue = this->expression->codeGen(context);
     context.blocksStack.back()->returnVal = returnValue;
     //cout << "Return statement generate success" << endl;
     return returnValue;
+}
+
+llvm::Value* NIfStatement::codeGen(CodeGenContext& context){
+    Value* CondV = this->condition->codeGen(context);
+    //if the condition isn't establish.
+    if(!CondV)
+        return nullptr;
+    if(CondV->getType()->getTypeID() == Type::DoubleTyID){
+        CondV =  context.builder->CreateFCmpONE(CondV, ConstantFP::get(*context.llvmContext, APFloat(0.0)), "ifcond");
+    }else if(CondV->getType()->getTypeID() == Type::IntegerTyID){
+        CondV = context.builder->CreateIntCast(CondV, Type::getInt1Ty(*context.llvmContext), true);
+        CondV = context.builder->CreateICmpNE(CondV, ConstantInt::get(Type::getInt1Ty(*context.llvmContext), 0, true));
+    }
+
+    Function* TheFunction = context.builder->GetInsertBlock()->getParent();
+
+    BasicBlock* ThenBB = BasicBlock::Create(*context.llvmContext, "then", TheFunction);
+    BasicBlock* ElseBB = BasicBlock::Create(*context.llvmContext, "else");
+    //MergeBB is used to deal with phi function and return
+    BasicBlock* MergeBB = BasicBlock::Create(*context.llvmContext, "ifcont");
+
+    //Establish condition branch，but the blocks are not yet be generated
+    context.builder->CreateCondBr(CondV, ThenBB, ElseBB);
+
+//Emit then block
+    //Insert the builder to top of the currently empty ThenBB
+    context.builder->SetInsertPoint(ThenBB);
+    //Recursively generate Thenblock
+    Value* ThenV = this->ThenBlock->codeGen(context);
+    if(!ThenV)
+        return nullptr;
+    context.builder->CreateBr(MergeBB);
+    // Codegen of 'Then' can change the current block, update ThenBB for the PHI.
+    ThenBB = context.builder->GetInsertBlock();
+
+//Emit else block
+    TheFunction->getBasicBlockList().push_back(ElseBB);
+    context.builder->SetInsertPoint(ElseBB);
+    Value* ElseV = ElseBlock->codeGen(context);
+    if (!ElseV)
+        return nullptr;
+    context.builder->CreateBr(MergeBB);
+    // codegen of 'Else' can change the current block, update ElseBB for the PHI.
+    ElseBB = context.builder->GetInsertBlock();
+
+// Emit merge block.
+    //add the merge block to the function
+    TheFunction->getBasicBlockList().push_back(MergeBB);
+    //Change the insertion point so that newly created code will go into the “merge” block.
+    context.builder->SetInsertPoint(MergeBB);
+    // PHINode *PN = context.builder->CreatePHI(Type::getDoubleTy(*context.llvmContext), 2, "iftmp");
+    // PN->addIncoming(ThenV, ThenBB);
+    // PN->addIncoming(ElseV, ElseBB);
+    // return PN;
+    
+    return nullptr;
 }
 
 

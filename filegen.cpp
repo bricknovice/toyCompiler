@@ -73,8 +73,7 @@ void ObjGen(CodeGenContext& context){
         return;
     }
     legacy::PassManager PM;
-    auto FileType = CGFT_ObjectFile;
-    if (TM->addPassesToEmitFile(PM, dest, nullptr, FileType)){
+    if (TM->addPassesToEmitFile(PM, dest, nullptr, llvm::CodeGenFileType::CGFT_AssemblyFile)){
         errs() << "TargetMachine can't emit a file of this type";
         return ;
     }

@@ -13,6 +13,8 @@ extern "C" int yywrap() { return 1;}
 %% 
 [ \t\n]			        ;
 "return"                SAVE_TOKEN(); return TOKEN(TRETURN);
+"if"                    SAVE_TOKEN(); return TOKEN(TIF);
+"else"                  SAVE_TOKEN(); return TOKEN(TEL);
 [a-zA-Z_][a-zA-Z0-9_]* 	SAVE_TOKEN(); return TIDENTIFIER;
 [0-9]+\.[0-9]*			SAVE_TOKEN(); return TDOUBLE;
 [0-9]+				    SAVE_TOKEN(); return TINTEGER;
@@ -33,5 +35,10 @@ extern "C" int yywrap() { return 1;}
 "-"                     	return TOKEN(TMINUS);
 "*"                     	return TOKEN(TMUL);
 "/"                     	return TOKEN(TDIV);
+"&"                         return TOKEN(TAND);
+"|"                         return TOKEN(TOR);
+"^"                         return TOKEN(TXOR);
+"<<"                        return TOKEN(TLSFT);
+">>"                        return TOKEN(TRSFT);
 .                       	printf("Unknown token!n"); yyterminate();
 %%

@@ -69,7 +69,14 @@ extern int yydebug;
     TMINUS = 275,
     TMUL = 276,
     TDIV = 277,
-    TRETURN = 278
+    TAND = 278,
+    TOR = 279,
+    TXOR = 280,
+    TLSFT = 281,
+    TRSFT = 282,
+    TIF = 283,
+    TEL = 284,
+    TRETURN = 285
   };
 #endif
 
@@ -90,7 +97,7 @@ std::vector<NExpression*>* exprvec;
 std::string* string;
 int token;
 
-#line 94 "parser.hpp"
+#line 101 "parser.hpp"
 
 };
 typedef union YYSTYPE YYSTYPE;

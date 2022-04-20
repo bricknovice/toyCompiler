@@ -81,10 +81,6 @@
     (Analyzer)Hello from: func1
     (Analyzer)Number of arguments: 2
     ```
-## TODO
-  1. ~~objcode and bitcode generation(2022/3/28)~~
-  2. ~~Analyzer pass implements(2022/4/1)~~
-  3. Cmake build 
 ## Issue
   * (Solved, The CMAKE_PREFIX_PATH needs to be specified.)opt unable to recognize my custom analyzer pass and report the following error message. 
     > Failed to load passes from 'libAnalyzer.so'. Request ignored. \

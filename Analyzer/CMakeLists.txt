@@ -7,12 +7,11 @@ project(llvm-tutor-hello-world)
 # set(LT_LLVM_CMAKE_CONFIG_DIR "${LT_LLVM_INSTALL_DIR}/lib/cmake/llvm/")
 # list(APPEND CMAKE_PREFIX_PATH "${LT_LLVM_CMAKE_CONFIG_DIR}")
 
-
 set(CMAKE_PREFIX_PATH "/home/joshua/llvm-project/build/lib/cmake/llvm")
 
 # Step 2. Load LLVM config from ... LLVMConfig.cmake
 find_package(LLVM REQUIRED CONFIG)
-message(STATUS "!!!CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
+
 # Analyzer includes header files from LLVM
 include_directories(${LLVM_INCLUDE_DIRS})
 

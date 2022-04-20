@@ -23,8 +23,8 @@ int token;
 %token <string> TIDENTIFIER TINTEGER TDOUBLE 
 %token <token> TCEQ TCNE TCLT TCLE TCGT TCGE TEQUAL
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TCOMMA TDOT
-%token <token> TPLUS TMINUS TMUL TDIV
-%token <token> TRETURN
+%token <token> TPLUS TMINUS TMUL TDIV TAND TOR TXOR TLSFT TRSFT
+%token <token> TIF TEL TRETURN 
 
 //Define non terminal symbols
 %type <ident> ident
@@ -32,7 +32,7 @@ int token;
 %type <varvec> func_decl_args
 %type <exprvec> call_args
 %type <block> program stmts block
-%type <stmt> stmt var_decl func_decl
+%type <stmt> stmt var_decl func_decl if_stmt
 %type <token> comparison
 
 %left TPLUS TMINUS
@@ -54,6 +54,7 @@ stmts : stmt { $$ = new NBlock(); $$->statements.push_back($<stmt>1);}
 stmt  : var_decl| func_decl 
       | expr { $$ = new NExpressionStatement(*$1);}
       | TRETURN expr { $$ = new NReturnStatement($2);}
+      | if_stmt
       ;
 
 block : TLBRACE stmts TRBRACE { $$ = $2; }
@@ -95,7 +96,15 @@ call_args : /*blank*/  { $$ = new ExpressionList();}
 
 comparison : TCEQ | TCNE | TCLT | TCLE | TCGT | TCGE 
            | TPLUS | TMINUS | TMUL | TDIV
+           | TAND | TOR | TXOR | TLSFT | TRSFT
            ;
-
+if_stmt : TIF expr block { $$ = new NIfStatement($2, $3);} 
+        | TIF expr block TEL block{ $$ = new NIfStatement($2, $3, $5);}
+        | TIF expr block TEL if_stmt{ 
+                                auto blks = new NBlock();
+                                blks->statements.push_back( $5);
+                                 $$ = new NIfStatement($2, $3, blks);
+        };
+                                          
 %%
 

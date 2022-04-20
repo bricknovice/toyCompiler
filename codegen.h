@@ -20,7 +20,7 @@ public:
     llvm::BasicBlock *block;
     llvm::Value* returnVal;
     //local variables
-    std::map<std::string, llvm::Value*> locals;
+    SymTable localsVars;
 };
 
 

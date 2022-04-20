@@ -4,9 +4,20 @@ bison -d -o parser.cpp parser.y
 //Create the tokens.cpp file
 lex -o tokens.cpp tokens.l
 
-//Build parser and generate raw IR code.
+//Building AST
 clang++ -g -O3 -o main  main.cpp parser.cpp tokens.cpp codegen.cpp filegen.cpp `llvm-config --cxxflags --ldflags --system-libs --libs` -w -pthread
 
+//Write down your program and generate corresponding object file(output.o) and bitcode (module.bc). For example,
+./main
+double func1(int a, int b){ return a + b + 1.0 }
+func1(1,2)
+(Notice: Quit by sending an EOF via CTRL+D)
+
+//Create a analyzer pass library by cmake
+cd Analyzer
+change CMakeLists.txt line10 by setting your CMAKE_PREFIX_PATH
+cmake .
+make
 
 //Run "module.bc"(bitcode) with "analyzer"(pass) from libAnalyzer.so twice.
-opt -load-pass-plugin libAnalyzer.so --passes=analyzer,analyzer -disable-output ../module.bc
+opt -load-pass-plugin ./Analyzer/libAnalyzer.so --passes=analyzer,analyzer -disable-output module.bc
